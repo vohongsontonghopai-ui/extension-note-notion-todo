@@ -1,0 +1,139 @@
+/* ==========================================
+   Notion Task AI - Toast Notification Styles
+   ========================================== */
+
+.nta-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483647;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  pointer-events: none;
+}
+
+.nta-toast {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 16px 20px;
+  min-width: 300px;
+  max-width: 420px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 40px rgba(99, 102, 241, 0.1);
+  backdrop-filter: blur(20px);
+  transform: translateY(20px) scale(0.95);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+.nta-toast-visible {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.nta-toast-hiding {
+  transform: translateY(10px) scale(0.98);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Header */
+.nta-toast-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.nta-toast-brand {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Icons */
+.nta-toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.nta-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.nta-icon-success {
+  color: #10b981;
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.4));
+}
+
+.nta-icon-error {
+  color: #ef4444;
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.4));
+}
+
+/* Spinner */
+.nta-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  border-top-color: #818cf8;
+  border-radius: 50%;
+  animation: nta-spin 0.8s linear infinite;
+}
+
+@keyframes nta-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Body */
+.nta-toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nta-toast-message {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.nta-toast-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.nta-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 100px;
+  letter-spacing: 0.3px;
+}
+
+/* Status-specific accents */
+.nta-toast-processing {
+  border-left: 3px solid #818cf8;
+}
+
+.nta-toast-success {
+  border-left: 3px solid #10b981;
+}
+
+.nta-toast-error {
+  border-left: 3px solid #ef4444;
+}
