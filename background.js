@@ -127,7 +127,7 @@ Quy tắc:
   + "Nghiên cứu và học tập" - học tập, nghiên cứu, tài liệu
 - "priority": Mặc định "Không khẩn cấp", chỉ "Khẩn cấp" nếu nội dung thể hiện sự cấp bách
 
-CHỈ trả về JSON, không thêm bất kỳ text nào khác.`;
+QUAN TRỌNG: CHỈ trả về đúng 1 JSON object thuần túy. KHÔNG thêm markdown, KHÔNG dùng **bold**, KHÔNG giải thích, KHÔNG bọc trong code block. Chỉ trả về {...} duy nhất.`;
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -160,11 +160,26 @@ CHỈ trả về JSON, không thêm bất kỳ text nào khác.`;
     throw new Error('AI không trả về kết quả');
   }
 
-  // Parse JSON from AI response (handle markdown code blocks)
+  // Parse JSON from AI response - multiple strategies
   let jsonStr = content.trim();
-  if (jsonStr.startsWith('```')) {
-    jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+
+  // Strategy 1: Extract from markdown code blocks (```json ... ``` or ``` ... ```)
+  const codeBlockMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+  if (codeBlockMatch) {
+    jsonStr = codeBlockMatch[1].trim();
   }
+
+  // Strategy 2: If still not valid JSON, try to find JSON object in the text
+  if (!jsonStr.startsWith('{')) {
+    const jsonMatch = jsonStr.match(/\{[\s\S]*"task"[\s\S]*"content"[\s\S]*"category"[\s\S]*"priority"[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0];
+    }
+  }
+
+  // Strategy 3: Clean any remaining markdown artifacts
+  jsonStr = jsonStr.replace(/\*\*([^*]+)\*\*/g, '$1'); // Remove **bold**
+  jsonStr = jsonStr.replace(/\*([^*]+)\*/g, '$1');     // Remove *italic*
 
   try {
     const result = JSON.parse(jsonStr);
@@ -174,6 +189,7 @@ CHỈ trả về JSON, không thêm bất kỳ text nào khác.`;
     }
     return result;
   } catch (e) {
+    console.error('AI raw response:', content);
     throw new Error(`Không thể phân tích kết quả AI: ${e.message}`);
   }
 }
