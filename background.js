@@ -2,7 +2,14 @@
 // Notion Task AI - Background Service Worker
 // ==========================================
 
-const DEFAULT_CONFIG = {
+// Import config (contains API keys - gitignored)
+try {
+  importScripts('config.js');
+} catch (e) {
+  console.warn('config.js not found, using empty defaults. Configure via popup settings.');
+}
+
+const DEFAULT_CONFIG = (typeof CONFIG !== 'undefined') ? CONFIG : {
   openrouterApiKey: '',
   notionToken: '',
   notionDatabaseId: '',
@@ -15,6 +22,15 @@ chrome.runtime.onInstalled.addListener(() => {
     id: 'send-to-notion',
     title: '📋 Gửi vào Notion',
     contexts: ['selection']
+  });
+
+  // Auto-save default config on first install
+  chrome.storage.sync.get(DEFAULT_CONFIG, (existing) => {
+    if (!existing.openrouterApiKey || !existing.notionToken || !existing.notionDatabaseId) {
+      chrome.storage.sync.set(DEFAULT_CONFIG, () => {
+        console.log('Notion Task AI: Config saved.');
+      });
+    }
   });
 });
 
