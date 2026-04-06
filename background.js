@@ -106,55 +106,73 @@ async function getConfig() {
 
 // ---- AI Analysis via OpenRouter ----
 async function analyzeWithAI(text, config) {
-  const systemPrompt = `You are a JSON-only API. You analyze text and return a single JSON object.
-Required format:
-{"task":"short name max 50 chars","content":"structured detail","category":"one of: Công việc, AI, Cá nhân, Mua sắm, Nghiên cứu và học tập","priority":"Khẩn cấp or Không khẩn cấp"}
+  console.log('[NTA] Starting analysis, text length:', text.length, 'model:', config.aiModel);
+  console.log('[NTA] API key:', config.openrouterApiKey ? 'SET (' + config.openrouterApiKey.substring(0,10) + '...)' : 'MISSING');
+  console.log('[NTA] Notion token:', config.notionToken ? 'SET' : 'MISSING');
 
-Rules:
-- task: extract the main idea as a short, clear task name (Vietnamese)
-- content: rewrite the original text in structured, readable Vietnamese. Use dash (-) for lists
-- category: classify based on content (Mua sắm=shopping, Cá nhân=personal, Công việc=work, AI=tech/AI, Nghiên cứu và học tập=study)
-- priority: default "Không khẩn cấp", only "Khẩn cấp" if urgent
-
-RESPOND WITH ONLY THE JSON OBJECT. No markdown. No code blocks. No explanation.`;
-
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${config.openrouterApiKey}`,
-      'HTTP-Referer': 'chrome-extension://notion-task-ai',
-      'X-Title': 'Notion Task AI Extension'
-    },
-    body: JSON.stringify({
-      model: config.aiModel,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: text }
-      ],
-      temperature: 0.2,
-      max_tokens: 800,
-      response_format: { type: 'json_object' }
-    })
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(`OpenRouter API lỗi: ${response.status} - ${errorData.error?.message || 'Unknown'}`);
+  if (!config.openrouterApiKey) {
+    throw new Error('Chưa có OpenRouter API Key! Vào popup → Cài đặt.');
   }
 
-  const data = await response.json();
+  const systemPrompt = `You are a JSON-only API. Analyze the given text and return ONLY a raw JSON object.
+Format: {"task":"short Vietnamese name","content":"structured Vietnamese detail","category":"Công việc|AI|Cá nhân|Mua sắm|Nghiên cứu và học tập","priority":"Khẩn cấp|Không khẩn cấp"}
+Do NOT wrap in code blocks. Do NOT add markdown. Return ONLY {...}`;
+
+  let response;
+  try {
+    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.openrouterApiKey}`,
+        'HTTP-Referer': 'chrome-extension://notion-task-ai',
+        'X-Title': 'Notion Task AI Extension'
+      },
+      body: JSON.stringify({
+        model: config.aiModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: text }
+        ],
+        temperature: 0.2,
+        max_tokens: 800,
+        response_format: { type: 'json_object' }
+      })
+    });
+    console.log('[NTA] Fetch OK, status:', response.status);
+  } catch (fetchErr) {
+    console.error('[NTA] FETCH FAILED:', fetchErr);
+    throw new Error(`Lỗi kết nối đến OpenRouter: ${fetchErr.message}`);
+  }
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    console.error('[NTA] API error:', response.status, errText);
+    throw new Error(`API lỗi ${response.status}: ${errText.substring(0, 150)}`);
+  }
+
+  let data;
+  try {
+    data = await response.json();
+  } catch (e) {
+    throw new Error('Response không phải JSON');
+  }
+
   const content = data.choices?.[0]?.message?.content;
+  console.log('[NTA] AI raw content:', JSON.stringify(content)?.substring(0, 300));
 
   if (!content) {
-    throw new Error('AI không trả về kết quả');
+    console.error('[NTA] Full response:', JSON.stringify(data));
+    throw new Error('AI không trả về nội dung');
   }
 
   const result = extractJSON(content);
   if (!result) {
-    console.error('AI raw response:', content);
-    throw new Error('Không thể phân tích kết quả AI');
+    console.error('[NTA] extractJSON FAILED on:', content);
+    throw new Error('Parse lỗi - xem Console (service worker) để debug');
   }
+
+  console.log('[NTA] SUCCESS:', JSON.stringify(result));
 
   // Validate and set defaults
   return {
