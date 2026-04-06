@@ -74,6 +74,15 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         data: aiResult
       });
 
+      // Native notification for success
+      chrome.notifications.create('nta-success-' + Date.now(), {
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: '✅ Notion Task AI',
+        message: `Đã gửi: "${aiResult.task}" [${aiResult.category}]`,
+        priority: 2
+      });
+
       // Save to history
       await saveToHistory(aiResult, notionResult.url);
 
@@ -83,6 +92,15 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         type: 'NOTION_TASK_STATUS',
         status: 'error',
         message: `❌ Lỗi: ${error.message}`
+      });
+
+      // Native notification for error
+      chrome.notifications.create('nta-error-' + Date.now(), {
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: '❌ Notion Task AI - Lỗi',
+        message: error.message,
+        priority: 2
       });
     }
   }
